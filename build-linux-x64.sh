@@ -140,8 +140,6 @@ build_lame() {
         tar xzf lame-3.100.tar.gz
     fi
     cd lame-3.100
-    make distclean || true
-    autoreconf -fiv
     ./configure \
         --prefix="$INSTALL_PREFIX" \
         --disable-shared \
@@ -198,7 +196,6 @@ compile() {
         --disable-programs \
         --enable-ffmpeg \
         --disable-avdevice \
-        --disable-postproc \
         --disable-network \
         --disable-doc \
         --disable-debug \
