@@ -21,9 +21,10 @@ CXX="${HOST}-g++-posix"
 AR="${HOST}-ar"
 RANLIB="${HOST}-ranlib"
 STRIP="${HOST}-strip"
-PKG_CONFIG="${HOST}-pkg-config"
+PKG_CONFIG="pkg-config"
 
-export PKG_CONFIG_PATH="$INSTALL_PREFIX/lib/pkgconfig:${PKG_CONFIG_PATH:-}"
+export PKG_CONFIG_LIBDIR="$INSTALL_PREFIX/lib/pkgconfig"
+export PKG_CONFIG_PATH=
 export CROSS_COMPILE="${HOST}-"
 
 # ----------------------------------------------------------
@@ -164,8 +165,19 @@ build_opus() {
     make -j"$NPROC"
     make install
 
-    # Ensure opus.pc includes -lm for static linking
-    sed -i 's/^Libs: /Libs: -lm /' "$INSTALL_PREFIX/lib/pkgconfig/opus.pc" 2>/dev/null || true
+    # Manually generate opus.pc with full static link flags
+    cat > "$INSTALL_PREFIX/lib/pkgconfig/opus.pc" <<EOF
+prefix=$INSTALL_PREFIX
+exec_prefix=\${prefix}
+libdir=\${exec_prefix}/lib
+includedir=\${prefix}/include
+
+Name: opus
+Description: Opus audio codec
+Version: 1.5.2
+Libs: -L\${libdir} -lopus -lm
+Cflags: -I\${includedir}
+EOF
 }
 
 build_lame() {
@@ -224,7 +236,8 @@ compile() {
     cd "$SCRIPT_DIR"
     make distclean || true
 
-    export PKG_CONFIG_PATH="$INSTALL_PREFIX/lib/pkgconfig:${PKG_CONFIG_PATH:-}"
+    export PKG_CONFIG_LIBDIR="$INSTALL_PREFIX/lib/pkgconfig"
+    export PKG_CONFIG_PATH=
 
     ./configure \
         --prefix="$OUTPUT_DIR" \
@@ -234,6 +247,7 @@ compile() {
         --cc="$CC" \
         --cxx="$CXX" \
         --pkg-config="$PKG_CONFIG" \
+        --pkg-config-flags="--static" \
         --extra-cflags="-I$INSTALL_PREFIX/include" \
         --extra-ldflags="-L$INSTALL_PREFIX/lib -static -static-libgcc -static-libstdc++ -lwinpthread" \
         --disable-everything \

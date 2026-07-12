@@ -129,8 +129,19 @@ build_opus() {
     make -j"$NPROC"
     make install
 
-    # Ensure opus.pc includes -lm for static linking
-    sed -i 's/^Libs: /Libs: -lm /' "$INSTALL_PREFIX/lib/pkgconfig/opus.pc" 2>/dev/null || true
+    # Manually generate opus.pc with full static link flags
+    cat > "$INSTALL_PREFIX/lib/pkgconfig/opus.pc" <<EOF
+prefix=$INSTALL_PREFIX
+exec_prefix=\${prefix}
+libdir=\${exec_prefix}/lib
+includedir=\${prefix}/include
+
+Name: opus
+Description: Opus audio codec
+Version: 1.5.2
+Libs: -L\${libdir} -lopus -lm
+Cflags: -I\${includedir}
+EOF
 }
 
 build_lame() {
@@ -192,6 +203,7 @@ compile() {
         --prefix="$OUTPUT_DIR" \
         --extra-cflags="-I$INSTALL_PREFIX/include" \
         --extra-ldflags="-L$INSTALL_PREFIX/lib" \
+        --pkg-config-flags="--static" \
         --disable-everything \
         --disable-programs \
         --enable-ffmpeg \
