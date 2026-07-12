@@ -1,0 +1,72 @@
+name: Build FFmpeg
+
+on:
+  push:
+    branches: [master]
+  workflow_dispatch:
+
+jobs:
+  build-linux-x64:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install build tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential yasm nasm pkg-config libva-dev libdrm-dev git cmake autoconf automake libtool upx
+
+      - name: Build dependencies
+        run: ./build-linux-x64.sh build-dep
+
+      - name: Compile FFmpeg
+        run: ./build-linux-x64.sh compile
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ffmpeg-linux-x64
+          path: output-linux-x64/ffmpeg
+
+  build-win-x64:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install build tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y mingw-w64 build-essential yasm nasm git pkg-config cmake autoconf automake libtool
+
+      - name: Build dependencies
+        run: ./build-win-x64.sh build-dep
+
+      - name: Compile FFmpeg
+        run: ./build-win-x64.sh compile
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ffmpeg-win-x64
+          path: output-win64/ffmpeg.exe
+
+  build-mac-arm64:
+    runs-on: macos-14
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install build tools
+        run: |
+          brew install yasm nasm pkg-config cmake autoconf automake libtool
+
+      - name: Build dependencies
+        run: ./build-mac-arm.sh build-dep
+
+      - name: Compile FFmpeg
+        run: ./build-mac-arm.sh compile
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ffmpeg-mac-arm64
+          path: output-mac-arm64/ffmpeg
